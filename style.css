@@ -1,0 +1,129 @@
+body {
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    margin: 0;
+    background-color: #f0f0f0;
+}
+
+.game-container {
+    text-align: center;
+}
+
+#game-board {
+    display: grid;
+    grid-template-rows: repeat(5, 1fr);
+    grid-gap: 5px;
+    margin-bottom: 20px;
+}
+
+.row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-gap: 5px;
+}
+
+.tile {
+    width: 50px;
+    height: 50px;
+    border: 2px solid #ccc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5em;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.correct {
+    background-color: #6aaa64;
+    color: white;
+}
+
+.present {
+    background-color: #c9b458;
+    color: white;
+}
+
+.absent {
+    background-color: #787c7e;
+    color: white;
+}
+
+#keyboard {
+    display: grid;
+    grid-template-rows: repeat(3, 1fr);
+    grid-gap: 5px;
+}
+
+.keyboard-row {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+}
+
+.key {
+    padding: 10px;
+    min-width: 30px;
+    background-color: #d3d6da;
+    border: none;
+    border-radius: 4px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.key.wide {
+    min-width: 65px;
+}
+
+#results-screen {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background-color: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    text-align: center;
+}
+
+#results-screen.hidden {
+    display: none;
+}
+
+#result-grid {
+    display: grid;
+    grid-template-rows: repeat(5, 1fr);
+    grid-gap: 5px;
+    margin: 20px 0;
+}
+
+#result-grid .row {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    grid-gap: 5px;
+}
+
+#result-grid .tile {
+    width: 20px;
+    height: 20px;
+    border: none;
+}
+
+#share-button, #play-again-button {
+    margin: 10px;
+    padding: 10px 20px;
+    font-size: 16px;
+    cursor: pointer;
+    background-color: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+}
+
+#play-again-button {
+    background-color: #008CBA;
+}
