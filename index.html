@@ -7,11 +7,33 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="game-container">
+    <div id="intro-screen">
+        <h1>Welcome to Hardle</h1>
+        <div id="game-description">
+            <p>Hardle: Wordle but hard. Challenge yourself with this twisted version of the classic word game!</p>
+        </div>
+        <div id="game-rules">
+            <h2>Game Rules</h2>
+            <ul>
+                <li>Guess the word in 6 tries.</li>
+                <li>Each guess must be a valid 5-letter word.</li>
+                <li>The color of the tiles will change to show how close your guess was.</li>
+                <li>Green: The letter is correct and in the right position.</li>
+                <li>Yellow: The letter is in the word but in the wrong position.</li>
+                <li>Gray: The letter is not in the word.</li>
+            </ul>
+        </div>
+        <button id="start-daily">Daily Puzzle</button>
+        <button id="start-unlimited">Unlimited Puzzles</button>
+    </div>
+
+    <div class="game-container hidden">
         <h1>Hardle</h1>
+        <div id="puzzle-type"></div>
         <div id="game-board"></div>
         <div id="keyboard"></div>
     </div>
+
     <div id="results-screen" class="hidden">
         <h2>Game Results</h2>
         <p id="result-message"></p>
