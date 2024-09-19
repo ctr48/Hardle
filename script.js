@@ -1,6 +1,6 @@
 // Spotify API configuration
-const clientId = 'YOUR_SPOTIFY_CLIENT_ID';
-const redirectUri = 'http://localhost:8000'; // Update this with your actual redirect URI
+const clientId = 'YOUR_SPOTIFY_CLIENT_ID'; // Replace with your actual Client ID
+const redirectUri = 'http://localhost:8000';
 
 // DOM elements
 const loginButton = document.getElementById('login-button');
@@ -21,8 +21,14 @@ loginButton.addEventListener('click', authenticateWithSpotify);
 
 // Check if the user is already authenticated
 window.onload = function() {
-    const accessToken = localStorage.getItem('spotify_access_token');
+    const params = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = params.get('access_token');
     if (accessToken) {
+        localStorage.setItem('spotify_access_token', accessToken);
+        hideLoginButton();
+        fetchUserProfile();
+        fetchNowPlaying();
+    } else if (localStorage.getItem('spotify_access_token')) {
         hideLoginButton();
         fetchUserProfile();
         fetchNowPlaying();
@@ -33,19 +39,8 @@ window.onload = function() {
 function authenticateWithSpotify() {
     const scopes = 'user-read-private user-read-email user-read-currently-playing';
     const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&response_type=token`;
+    console.log('Authorization URL:', authUrl); // Log the authorization URL
     window.location.href = authUrl;
-}
-
-// Handle the redirect from Spotify
-if (window.location.hash) {
-    const params = new URLSearchParams(window.location.hash.substring(1));
-    const accessToken = params.get('access_token');
-    if (accessToken) {
-        localStorage.setItem('spotify_access_token', accessToken);
-        hideLoginButton();
-        fetchUserProfile();
-        fetchNowPlaying();
-    }
 }
 
 // Hide login button and show user profile
@@ -70,7 +65,10 @@ function fetchUserProfile() {
             userImage.src = data.images[0].url;
         }
     })
-    .catch(error => console.error('Error fetching user profile:', error));
+    .catch(error => {
+        console.error('Error fetching user profile:', error);
+        handleAuthError();
+    });
 }
 
 // Fetch currently playing track
@@ -81,7 +79,12 @@ function fetchNowPlaying() {
             'Authorization': `Bearer ${accessToken}`
         }
     })
-    .then(response => response.json())
+    .then(response => {
+        if (response.status === 204) {
+            throw new Error('No track currently playing');
+        }
+        return response.json();
+    })
     .then(data => {
         if (data && data.item) {
             trackName.textContent = data.item.name;
@@ -90,10 +93,13 @@ function fetchNowPlaying() {
             albumCover.src = data.item.album.images[0].url;
             fetchLyricsPreview(data.item.name, data.item.artists[0].name);
         } else {
-            nowPlaying.innerHTML = '<p>No track currently playing</p>';
+            throw new Error('No track data available');
         }
     })
-    .catch(error => console.error('Error fetching now playing:', error));
+    .catch(error => {
+        console.error('Error fetching now playing:', error);
+        nowPlaying.innerHTML = '<p>No track currently playing</p>';
+    });
 }
 
 // Fetch lyrics preview (Note: This is a mock function as we can't provide full lyrics)
@@ -102,6 +108,15 @@ function fetchLyricsPreview(track, artist) {
     // For this example, we'll just show a mock preview
     lyricsContainer.classList.remove('hidden');
     lyricsPreview.textContent = `This is where a preview of the lyrics for "${track}" by ${artist} would appear. Due to copyright restrictions, we can't display full lyrics.`;
+}
+
+// Handle authentication errors
+function handleAuthError() {
+    localStorage.removeItem('spotify_access_token');
+    loginContainer.classList.remove('hidden');
+    userProfile.classList.add('hidden');
+    nowPlaying.classList.add('hidden');
+    lyricsContainer.classList.add('hidden');
 }
 
 // Refresh now playing information every 30 seconds
