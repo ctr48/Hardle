@@ -1,218 +1,108 @@
-const WORD_LENGTH = 5;
-const MAX_GUESSES = 5;
+// Spotify API configuration
+const clientId = 'YOUR_SPOTIFY_CLIENT_ID';
+const redirectUri = 'http://localhost:8000'; // Update this with your actual redirect URI
 
-let targetWord = '';
-let currentGuess = '';
-let guessCount = 0;
-let gameResults = [];
+// DOM elements
+const loginButton = document.getElementById('login-button');
+const loginContainer = document.getElementById('login-container');
+const userProfile = document.getElementById('user-profile');
+const userName = document.getElementById('user-name');
+const userImage = document.getElementById('user-image');
+const nowPlaying = document.getElementById('now-playing');
+const trackName = document.getElementById('track-name');
+const artistName = document.getElementById('artist-name');
+const albumName = document.getElementById('album-name');
+const albumCover = document.getElementById('album-cover');
+const lyricsContainer = document.getElementById('lyrics-container');
+const lyricsPreview = document.getElementById('lyrics-preview');
 
-const gameBoard = document.getElementById('game-board');
-const keyboard = document.getElementById('keyboard');
-const resultsScreen = document.getElementById('results-screen');
-const resultMessage = document.getElementById('result-message');
-const resultGrid = document.getElementById('result-grid');
-const shareButton = document.getElementById('share-button');
-const playAgainButton = document.getElementById('play-again-button');
+// Event listeners
+loginButton.addEventListener('click', authenticateWithSpotify);
 
-// Initialize the game
-function initGame() {
-    createGameBoard();
-    createKeyboard();
-    selectTargetWord();
-    window.addEventListener('keydown', handleKeyPress);
-    shareButton.addEventListener('click', shareResults);
-    playAgainButton.addEventListener('click', resetGame);
+// Check if the user is already authenticated
+window.onload = function() {
+    const accessToken = localStorage.getItem('spotify_access_token');
+    if (accessToken) {
+        hideLoginButton();
+        fetchUserProfile();
+        fetchNowPlaying();
+    }
+};
+
+// Spotify authentication
+function authenticateWithSpotify() {
+    const scopes = 'user-read-private user-read-email user-read-currently-playing';
+    const authUrl = `https://accounts.spotify.com/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scopes)}&response_type=token`;
+    window.location.href = authUrl;
 }
 
-// Create the game board
-function createGameBoard() {
-    for (let i = 0; i < MAX_GUESSES; i++) {
-        const row = document.createElement('div');
-        row.className = 'row';
-        for (let j = 0; j < WORD_LENGTH; j++) {
-            const tile = document.createElement('div');
-            tile.className = 'tile';
-            row.appendChild(tile);
+// Handle the redirect from Spotify
+if (window.location.hash) {
+    const params = new URLSearchParams(window.location.hash.substring(1));
+    const accessToken = params.get('access_token');
+    if (accessToken) {
+        localStorage.setItem('spotify_access_token', accessToken);
+        hideLoginButton();
+        fetchUserProfile();
+        fetchNowPlaying();
+    }
+}
+
+// Hide login button and show user profile
+function hideLoginButton() {
+    loginContainer.classList.add('hidden');
+    userProfile.classList.remove('hidden');
+    nowPlaying.classList.remove('hidden');
+}
+
+// Fetch user profile from Spotify
+function fetchUserProfile() {
+    const accessToken = localStorage.getItem('spotify_access_token');
+    fetch('https://api.spotify.com/v1/me', {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`
         }
-        gameBoard.appendChild(row);
-    }
-}
-
-// Create the keyboard
-function createKeyboard() {
-    const rows = [
-        ['Q', 'W', 'E', 'R', 'T', 'Y', 'U', 'I', 'O', 'P'],
-        ['A', 'S', 'D', 'F', 'G', 'H', 'J', 'K', 'L'],
-        ['Enter', 'Z', 'X', 'C', 'V', 'B', 'N', 'M', 'Backspace']
-    ];
-
-    rows.forEach(row => {
-        const keyboardRow = document.createElement('div');
-        keyboardRow.className = 'keyboard-row';
-        row.forEach(key => {
-            const buttonElement = document.createElement('button');
-            buttonElement.textContent = key;
-            buttonElement.className = 'key';
-            if (key === 'Enter' || key === 'Backspace') {
-                buttonElement.classList.add('wide');
-            }
-            buttonElement.addEventListener('click', () => handleKeyPress({ key }));
-            keyboardRow.appendChild(buttonElement);
-        });
-        keyboard.appendChild(keyboardRow);
-    });
-}
-
-// Select a random 5-letter word
-function selectTargetWord() {
-    const words = ["apple", "beach", "chair", "dance", "eagle", "flame", "grape", "horse", "ivory", "jelly", "knife", "lemon", "mango", "night", "ocean", "piano", "queen", "river", "storm", "tiger", "umbra", "violin", "witch", "xylophone", "yacht", "zebra"];
-    targetWord = words[Math.floor(Math.random() * words.length)].toUpperCase();
-}
-
-// Handle key press events
-function handleKeyPress(e) {
-    const key = e.key.toUpperCase();
-    if (key === 'ENTER' && currentGuess.length === WORD_LENGTH) {
-        submitGuess();
-    } else if (key === 'BACKSPACE' && currentGuess.length > 0) {
-        currentGuess = currentGuess.slice(0, -1);
-        updateGameBoard();
-    } else if (/^[A-Z]$/.test(key) && currentGuess.length < WORD_LENGTH) {
-        currentGuess += key;
-        updateGameBoard();
-    }
-}
-
-// Submit the current guess
-function submitGuess() {
-    if (currentGuess.length !== WORD_LENGTH) return;
-
-    const row = gameBoard.children[guessCount];
-    const tiles = row.children;
-    const result = evaluateGuess(currentGuess);
-
-    for (let i = 0; i < WORD_LENGTH; i++) {
-        tiles[i].textContent = currentGuess[i];
-        tiles[i].classList.add(result[i]);
-        updateKeyboardColor(currentGuess[i], result[i]);
-    }
-
-    gameResults.push(result);
-
-    if (currentGuess === targetWord) {
-        showResultsScreen(true);
-        return;
-    }
-
-    guessCount++;
-    if (guessCount === MAX_GUESSES) {
-        showResultsScreen(false);
-        return;
-    }
-
-    currentGuess = '';
-}
-
-// Evaluate the current guess
-function evaluateGuess(guess) {
-    const result = Array(WORD_LENGTH).fill('absent');
-    const letterCounts = {};
-
-    // Count the occurrences of each letter in the target word
-    for (let letter of targetWord) {
-        letterCounts[letter] = (letterCounts[letter] || 0) + 1;
-    }
-
-    // First pass: mark correct letters
-    for (let i = 0; i < WORD_LENGTH; i++) {
-        if (guess[i] === targetWord[i]) {
-            result[i] = 'correct';
-            letterCounts[guess[i]]--;
+    })
+    .then(response => response.json())
+    .then(data => {
+        userName.textContent = data.display_name;
+        if (data.images && data.images.length > 0) {
+            userImage.src = data.images[0].url;
         }
-    }
+    })
+    .catch(error => console.error('Error fetching user profile:', error));
+}
 
-    // Second pass: mark present letters
-    for (let i = 0; i < WORD_LENGTH; i++) {
-        if (result[i] !== 'correct' && letterCounts[guess[i]] > 0) {
-            result[i] = 'present';
-            letterCounts[guess[i]]--;
+// Fetch currently playing track
+function fetchNowPlaying() {
+    const accessToken = localStorage.getItem('spotify_access_token');
+    fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+        headers: {
+            'Authorization': `Bearer ${accessToken}`
         }
-    }
-
-    return result;
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data && data.item) {
+            trackName.textContent = data.item.name;
+            artistName.textContent = data.item.artists.map(artist => artist.name).join(', ');
+            albumName.textContent = data.item.album.name;
+            albumCover.src = data.item.album.images[0].url;
+            fetchLyricsPreview(data.item.name, data.item.artists[0].name);
+        } else {
+            nowPlaying.innerHTML = '<p>No track currently playing</p>';
+        }
+    })
+    .catch(error => console.error('Error fetching now playing:', error));
 }
 
-// Update the game board
-function updateGameBoard() {
-    const row = gameBoard.children[guessCount];
-    const tiles = row.children;
-
-    for (let i = 0; i < WORD_LENGTH; i++) {
-        tiles[i].textContent = i < currentGuess.length ? currentGuess[i] : '';
-    }
+// Fetch lyrics preview (Note: This is a mock function as we can't provide full lyrics)
+function fetchLyricsPreview(track, artist) {
+    // In a real app, you would call a lyrics API here
+    // For this example, we'll just show a mock preview
+    lyricsContainer.classList.remove('hidden');
+    lyricsPreview.textContent = `This is where a preview of the lyrics for "${track}" by ${artist} would appear. Due to copyright restrictions, we can't display full lyrics.`;
 }
 
-// Update keyboard key colors
-function updateKeyboardColor(letter, result) {
-    const key = document.querySelector(`.key:not(.wide):not(.colored)[textContent="${letter}"]`);
-    if (key) {
-        key.classList.add(result);
-        key.classList.add('colored');
-    }
-}
-
-// Show the results screen
-function showResultsScreen(won) {
-    resultsScreen.classList.remove('hidden');
-    resultMessage.textContent = won ? `Congratulations! You guessed the word!` : `Game over! Better luck next time.`;
-    
-    resultGrid.innerHTML = '';
-    gameResults.forEach(result => {
-        const row = document.createElement('div');
-        row.className = 'row';
-        result.forEach(tileResult => {
-            const tile = document.createElement('div');
-            tile.className = `tile ${tileResult}`;
-            row.appendChild(tile);
-        });
-        resultGrid.appendChild(row);
-    });
-}
-
-// Share results
-function shareResults() {
-    let resultText = `Hardle Game Results:\n`;
-    gameResults.forEach(result => {
-        resultText += result.map(r => r === 'correct' ? '🟩' : r === 'present' ? '🟨' : '⬜').join('') + '\n';
-    });
-
-    if (navigator.share) {
-        navigator.share({
-            title: 'Hardle Game Results',
-            text: resultText
-        }).catch(console.error);
-    } else {
-        // Fallback for browsers that don't support Web Share API
-        const textArea = document.createElement('textarea');
-        textArea.value = resultText;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        alert('Results copied to clipboard!');
-    }
-}
-
-// Reset the game
-function resetGame() {
-    guessCount = 0;
-    currentGuess = '';
-    gameResults = [];
-    gameBoard.innerHTML = '';
-    keyboard.innerHTML = '';
-    resultsScreen.classList.add('hidden');
-    initGame();
-}
-
-// Initialize the game
-initGame();
+// Refresh now playing information every 30 seconds
+setInterval(fetchNowPlaying, 30000);
