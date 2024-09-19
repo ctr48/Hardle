@@ -47,5 +47,3 @@ window.onload = function() {
         console.log('No access token found'); // Debug: Indicate no token scenario
     }
 };
-
-// ... (rest of your code remains unchanged)
