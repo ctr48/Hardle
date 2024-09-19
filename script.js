@@ -1,5 +1,5 @@
 // Spotify API configuration
-const clientId = 'YOUR_SPOTIFY_CLIENT_ID'; // Replace with your actual Client ID
+const clientId = 'd6321bff26594e628eae6954acd81e36'; // Replace with your actual Client ID
 const redirectUri = 'https://ctr48.github.io/hardle/';
 
 // DOM elements
