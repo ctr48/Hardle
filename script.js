@@ -1,6 +1,6 @@
 // Spotify API configuration
 const clientId = 'YOUR_SPOTIFY_CLIENT_ID'; // Replace with your actual Client ID
-const redirectUri = 'http://localhost:8000';
+const redirectUri = 'https://ctr48.github.io/hardle/';
 
 // DOM elements
 const loginButton = document.getElementById('login-button');
